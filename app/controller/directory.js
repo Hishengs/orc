@@ -11,8 +11,8 @@ module.exports = app => {
 
     // 创建文件夹
     async create (){
-    	const { newDirName } = this.ctx.request.body;
-    	const dirPath = path.join(rootDirectoryPath, newDirName);
+    	const { newDirName, parentPath } = this.ctx.request.body;
+    	const dirPath = path.join(parentPath || rootDirectoryPath, newDirName);
     	// 检测文件夹是否已存在
     	if(fs.existsSync(dirPath)){
     		this.ctx.doneWithError('文件夹已存在');
@@ -24,11 +24,13 @@ module.exports = app => {
 
     // 删除文件夹
     async remove (){
+      const { dirPath } = this.ctx.request.body;
     	try {
     		// 检测是否是空的文件夹，否则不予删除
+        fs.rmdirSync(dirPath);
     		this.ctx.done();
     	}catch (e){
-    		this.ctx.doneWithError(e);
+    		this.ctx.doneWithError(e.toString());
     	}
     }
 
@@ -64,7 +66,13 @@ module.exports = app => {
 
     // 重命名文件夹
     async rename (){
-    	this.ctx.done();
+      const { oldPath, newPath } = this.ctx.request.body;
+      try {
+        fs.renameSync(oldPath, newPath);
+        this.ctx.done();
+      }catch (e){
+        this.ctx.doneWithError(e.toString());
+      }
     }
 
   }

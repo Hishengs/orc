@@ -2,14 +2,29 @@
   <div id="tree-menu">
     <Tree :data="treeData"></Tree>
     <div class="action-bar">
-      <Poptip trigger="click" title="创建文件夹" placement="top">
+      <!-- <Poptip trigger="click" title="创建文件夹" placement="top">
         <Button type="text" size="small" class="create">创建文件夹</Button>
         <div slot="content">
           <p><Input v-model="newDirName" placeholder="文件夹名称" @on-enter="create"></Input></p>
           <Button type="primary" size="small" class="save" long @click="create">保存</Button>
         </div>
-      </Poptip>
+      </Poptip> -->
     </div>
+    <!-- 创建文件(夹)弹窗 -->
+    <Modal class="file-creator-modal" :title="createFileModal.type === 1 ? '创建文件夹' : '创建文件'" v-model="createFileModal.show">
+      <Input v-model="createFileModal.name" :placeholder="createFileModal.type === 1 ? '文件夹名称' : '文件名称'"></Input>
+      <div slot="footer">
+        <Button type="primary" @click="createFileConfirm">创建</Button>
+        <Button type="text" @click="createFileModal.name='';createFileModal.show=false;">取消</Button>
+      </div>
+    </Modal>
+    <Modal class="file-rename-modal" :title="renameFileModal.type === 1 ? '重命名文件夹' : '重命名文件'" v-model="renameFileModal.show">
+      <Input v-model="renameFileModal.name" :placeholder="renameFileModal.type === 1 ? '新的文件夹名称' : '新的文件名称'"></Input>
+      <div slot="footer">
+        <Button type="primary" @click="renameFileConfirm">重命名</Button>
+        <Button type="text" @click="renameFileModal.name='';renameFileModal.show=false;">取消</Button>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -93,6 +108,18 @@
           },*/
         ],
         newDirName: '',
+        createFileModal: {
+          show: false,
+          type: 1, // 1 文件夹 2 文件
+          name: '',
+          parentPath: '',
+        },
+        renameFileModal: {
+          show: false,
+          type: 1, // 1 文件夹 2 文件
+          name: '',
+          path: '',
+        },
       };
     },
     created (){
@@ -122,11 +149,112 @@
         console.log('>>> onFileSelect', dir);
         this.$emit('on-file-select', dir.content);
       },
+      // 创建文件夹或者文件
+      createFile (dir, type){
+        this.createFileModal.type = type;
+        this.createFileModal.parentPath = dir.path;
+        this.createFileModal.name = '';
+        this.createFileModal.show = true;
+      },
+      createFileConfirm (){
+        if(this.createFileModal.type === 1){ // 创建文件夹
+          this.api.directory.create(this.createFileModal.name, this.createFileModal.parentPath).then(res => {
+            console.log('>>> 创建文件夹 [res]', res);
+            if(res.data.err.level < 3){
+              this.createFileModal.show = false;
+              this.createFileModal.name = '';
+              this.$Message.success('创建成功');
+              this.traverse();
+            }else this.$Message.error('创建失败：' + res.data.err.msg);
+          });
+        }else if(this.createFileModal.type === 2){ // 创建文件
+          this.api.file.create(this.createFileModal.name, this.createFileModal.parentPath).then(res => {
+            console.log('>>> 创建文件 [res]', res);
+            if(res.data.err.level < 3){
+              this.createFileModal.show = false;
+              this.createFileModal.name = '';
+              this.$Message.success('创建成功');
+              this.traverse();
+            }else this.$Message.error('创建失败：' + res.data.err.msg);
+          });
+        }
+      },
+      // 删除文件夹或文件
+      removeFile (file){
+        if(file.isDir){ // 删除文件夹
+          if(file.content && file.content.length){
+            this.$Message.error('文件夹不为空，不能删除');
+          }else {
+            this.$Modal.confirm({
+              title: '删除文件夹',
+              content: '你确定要删除此文件夹：' + file.name + '？',
+              onOk: () => {
+                this.api.directory.remove(file.path).then(res => {
+                  console.log('>>> 删除文件夹 [res]', res);
+                  if(res.data.err.level < 3){
+                    this.$Message.success('删除成功');
+                    this.traverse();
+                  }else this.$Message.error('删除文件夹失败：' + res.data.err.msg);
+                });
+              },
+            });
+          }
+        }else {
+          this.$Modal.confirm({
+            title: '删除文件',
+            content: '你确定要删除此文件：' + file.name + '？',
+            onOk: () => {
+              this.api.file.remove(file.path).then(res => {
+                console.log('>>> 删除文件 [res]', res);
+                if(res.data.err.level < 3){
+                  this.$Message.success('删除成功');
+                  this.traverse();
+                }else this.$Message.error('删除文件失败：' + res.data.err.msg);
+              });
+            },
+          });
+        }
+      },
+      // 重命名文件夹或者文件
+      renameFile (dir, type){
+        this.renameFileModal.type = type;
+        this.renameFileModal.path = dir.path;
+        this.renameFileModal.name = dir.name;
+        this.renameFileModal.show = true;
+      },
+      renameFileConfirm (){
+        console.log('this.renameFileModal', this.renameFileModal);
+        if(this.renameFileModal.type === 1){ // 重命名文件夹
+          const newPath = this.renameFileModal.path.split(/[\\,\/]+/).slice(0, -1).join('/') + '/' + this.renameFileModal.name;
+          this.api.directory.rename(this.renameFileModal.path, newPath).then(res => {
+            console.log('>>> 重命名文件夹 [res]', res);
+            if(res.data.err.level < 3){
+              this.renameFileModal.show = false;
+              this.renameFileModal.name = '';
+              this.renameFileModal.path = '';
+              this.$Message.success('重命名成功');
+              this.traverse();
+            }else this.$Message.error('重命名失败：' + res.data.err.msg);
+          });
+        }else if(this.createFileModal.type === 2){ // 创建文件
+          const newPath = this.renameFileModal.path.split(/[\\,\/]+/).slice(0, -1).join('/') + '/' + this.renameFileModal.name;
+          this.api.file.rename(this.renameFileModal.path, newPath).then(res => {
+            console.log('>>> 重命名文件 [res]', res);
+            if(res.data.err.level < 3){
+              this.renameFileModal.show = false;
+              this.renameFileModal.name = '';
+              this.renameFileModal.path = '';
+              this.$Message.success('重命名成功');
+              this.traverse();
+            }else this.$Message.error('重命名失败：' + res.data.err.msg);
+          });
+        }
+      },
       recursiveDir (dir){
         if(dir.isDir){
           return {
             title: dir.name,
-            expand: false,
+            expand: true,
             children: dir.content.map(subDir => {
               return this.recursiveDir(subDir);
             }),
@@ -176,18 +304,44 @@
                       props: {
                         type: 'text',
                         size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.createFile(dir, 2);
+                        }
                       }
                     }, '新建文件'),
                     h('Button', {
                       props: {
                         type: 'text',
                         size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.createFile(dir, 1);
+                        }
                       }
                     }, '新建文件夹'),
                     h('Button', {
                       props: {
                         type: 'text',
                         size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.renameFile(dir, 1);
+                        }
+                      }
+                    }, '重命名文件夹'),
+                    h('Button', {
+                      props: {
+                        type: 'text',
+                        size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.removeFile(dir);
+                        }
                       }
                     }, '删除文件夹'),
                   ]),
@@ -262,12 +416,22 @@
                       props: {
                         type: 'text',
                         size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.renameFile(dir, 2);
+                        }
                       }
                     }, '重命名'),
                     h('Button', {
                       props: {
                         type: 'text',
                         size: 'small'
+                      },
+                      on: {
+                        click: () => {
+                          this.removeFile(dir);
+                        }
                       }
                     }, '删除文件'),
                   ]),

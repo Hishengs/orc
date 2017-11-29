@@ -19,6 +19,7 @@ function installPlugin(plugin, name){
 }
 installPlugin(api, 'api');
 installPlugin(util, 'util');
+installPlugin(new Vue(), 'eventHub');
 
 window.app = new Vue({
   el: '#app',
