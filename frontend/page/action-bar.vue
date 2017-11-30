@@ -6,6 +6,15 @@
 		<span class="item right about">
 			关于
 		</span>
+		<span class="item right view">
+			视图
+		</span>
+		<span class="item right theme">
+			主题
+		</span>
+		<span class="item right file">
+			文件
+		</span>
 	</div>
 </template>
 

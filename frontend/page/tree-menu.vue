@@ -1,5 +1,9 @@
 <template>
   <div id="tree-menu">
+    <!-- <Tabs>
+      <TabPane label="文件" name="files">文件</TabPane>
+      <TabPane label="大纲" name="outline">大纲</TabPane>
+    </Tabs> -->
     <Tree :data="treeData"></Tree>
     <div class="action-bar">
       <!-- <Poptip trigger="click" title="创建文件夹" placement="top">
@@ -12,14 +16,14 @@
     </div>
     <!-- 创建文件(夹)弹窗 -->
     <Modal class="file-creator-modal" :title="createFileModal.type === 1 ? '创建文件夹' : '创建文件'" v-model="createFileModal.show">
-      <Input v-model="createFileModal.name" :placeholder="createFileModal.type === 1 ? '文件夹名称' : '文件名称'"></Input>
+      <Input v-model="createFileModal.name" :placeholder="createFileModal.type === 1 ? '文件夹名称' : '文件名称'" @on-enter="createFileConfirm"></Input>
       <div slot="footer">
         <Button type="primary" @click="createFileConfirm">创建</Button>
         <Button type="text" @click="createFileModal.name='';createFileModal.show=false;">取消</Button>
       </div>
     </Modal>
     <Modal class="file-rename-modal" :title="renameFileModal.type === 1 ? '重命名文件夹' : '重命名文件'" v-model="renameFileModal.show">
-      <Input v-model="renameFileModal.name" :placeholder="renameFileModal.type === 1 ? '新的文件夹名称' : '新的文件名称'"></Input>
+      <Input v-model="renameFileModal.name" :placeholder="renameFileModal.type === 1 ? '新的文件夹名称' : '新的文件名称'" @on-enter="renameFileConfirm"></Input>
       <div slot="footer">
         <Button type="primary" @click="renameFileConfirm">重命名</Button>
         <Button type="text" @click="renameFileModal.name='';renameFileModal.show=false;">取消</Button>
@@ -145,9 +149,9 @@
           }
         });
       },
-      onFileSelect (dir){
-        console.log('>>> onFileSelect', dir);
-        this.$emit('on-file-select', dir.content);
+      onFileSelect (file){
+        console.log('>>> onFileSelect', file);
+        this.$emit('on-file-select', file);
       },
       // 创建文件夹或者文件
       createFile (dir, type){
@@ -250,6 +254,19 @@
           });
         }
       },
+      getRenderButton (h, name, onclick, opt){
+        return h('Button', {
+          props: {
+            type: 'text',
+            size: 'small'
+          },
+          on: {
+            click: () => {
+              onclick();
+            }
+          }
+        }, name);
+      },
       recursiveDir (dir){
         if(dir.isDir){
           return {
@@ -300,50 +317,21 @@
                       color: '#444'
                     }
                   }, [
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.createFile(dir, 2);
-                        }
-                      }
-                    }, '新建文件'),
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.createFile(dir, 1);
-                        }
-                      }
-                    }, '新建文件夹'),
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.renameFile(dir, 1);
-                        }
-                      }
-                    }, '重命名文件夹'),
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.removeFile(dir);
-                        }
-                      }
-                    }, '删除文件夹'),
+                    this.getRenderButton(h, '新建文件', () => {
+                      this.createFile(dir, 2);
+                    }),
+                    this.getRenderButton(h, '新建文件夹', () => {
+                      this.createFile(dir, 1);
+                    }),
+                    this.getRenderButton(h, '重命名文件夹', () => {
+                      this.renameFile(dir, 1);
+                    }),
+                    this.getRenderButton(h, '删除文件夹', () => {
+                      this.removeFile(dir);
+                    }),
+                    this.getRenderButton(h, '压缩并下载', () => {
+                      this.$Message.info('暂未支持');
+                    }),
                   ]),
                 ]),
               ]);
@@ -412,28 +400,15 @@
                       color: '#444'
                     }
                   }, [
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.renameFile(dir, 2);
-                        }
-                      }
-                    }, '重命名'),
-                    h('Button', {
-                      props: {
-                        type: 'text',
-                        size: 'small'
-                      },
-                      on: {
-                        click: () => {
-                          this.removeFile(dir);
-                        }
-                      }
-                    }, '删除文件'),
+                    this.getRenderButton(h, '重命名', () => {
+                      this.renameFile(dir, 2);
+                    }),
+                    this.getRenderButton(h, '删除文件', () => {
+                      this.removeFile(dir);
+                    }),
+                    this.getRenderButton(h, '下载文件', () => {
+                      this.$Message.info('暂未支持');
+                    }),
                   ]),
                 ]),
               ]);

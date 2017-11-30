@@ -34,8 +34,14 @@ module.exports = app => {
     }
  
     // 获取文件
-    async get (){
-    	this.ctx.done();
+    async fetch (){
+    	const { filePath } = this.ctx.request.body;
+      try {
+        const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
+        this.ctx.done(data);
+      }catch (e){
+        this.ctx.doneWithError(e.toString());
+      }
     }
 
     // 重命名文件
@@ -51,7 +57,13 @@ module.exports = app => {
 
     // 保存文件
     async save (){
+      const { filePath, data } = this.ctx.request.body;
+      try {
+        fs.writeFileSync(filePath, data);
         this.ctx.done();
+      }catch (e){
+        this.ctx.doneWithError(e.toString());
+      }
     }
 
   }

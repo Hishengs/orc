@@ -11,5 +11,7 @@ module.exports = app => {
   	router.post('/file/create', 'file.create');
   	router.post('/file/remove', 'file.remove');
   	router.post('/file/rename', 'file.rename');
+    router.post('/file/save', 'file.save');
+    router.post('/file/fetch', 'file.fetch');
   });
 };

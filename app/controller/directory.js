@@ -53,7 +53,8 @@ module.exports = app => {
 	    			if(_files[i].isDir){
 	    				_files[i].content = getDir(_files[i].path);
 	    			}else {
-	    				_files[i].content = fs.readFileSync(_files[i].path, { encoding: 'utf-8' });
+	    				// _files[i].content = fs.readFileSync(_files[i].path, { encoding: 'utf-8' });
+                        _files[i].content = null;
 	    			}
 	    		}
 	    		return _files;
